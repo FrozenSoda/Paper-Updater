@@ -125,13 +125,13 @@ def main():
     parser.add_argument('--server-dir',
                         help='The full path to the directory where the server files reside.',
                         required=True)
-    parser.add_argument('--start-script-name',
-                        help='The name of the server start script that resides in the server dir, '
-                             'including its file extension.',
-                        required=True)
     parser.add_argument('--minecraft-version',
                         help='The desired Minecraft version of the build to be downloaded.',
                         required=True)
+    parser.add_argument('--start-script-name',
+                        help='The name of the server start script that resides in the server dir, '
+                             'including its file extension.',
+                        default='start_noupdate.sh')
 
     args = parser.parse_args()
 
