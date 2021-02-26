@@ -135,6 +135,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.server_dir is not None:
+        args.server_dir = os.path.expanduser(args.server_dir)
+
     server_build = get_latest_server_build(args.minecraft_version)
     if server_build is None:
         return
