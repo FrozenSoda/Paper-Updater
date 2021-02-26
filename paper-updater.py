@@ -109,6 +109,8 @@ def update_server_script(server_build, server_dir, start_script_name):
     with open(start_script_path, 'w') as file:
         file.write(filedata)
 
+    print('Update finished!')
+
 
 def print_title(s):
     """Prints a nice looking title for menus, where 's' is a string consisting of the title text"""
