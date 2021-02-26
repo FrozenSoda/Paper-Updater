@@ -31,7 +31,7 @@ def sizeof_fmt(num, suffix='B'):
     return "%.1f %s%s" % (num, 'Yi', suffix)
 
 
-def get_latest_server_build(paper_version):
+def get_latest_server_build(server_dir, paper_version):
     global base_download_url
 
     print('Checking for updates ...')
@@ -50,7 +50,7 @@ def get_latest_server_build(paper_version):
 
     # Find newest existing build jar in script dir
     current_buildnum = -1
-    for filename in os.listdir(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))):
+    for filename in os.listdir(server_dir):
         if not re.match(buildnum_pattern, filename):
             # file is not a Paper jar file
             continue
@@ -76,7 +76,7 @@ def get_latest_server_build(paper_version):
         print('Installed Build:   No installed build was found')
     print('Download Size:     {}'.format(sizeof_fmt(latest_download_size)))
 
-    return ServerBuild(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), latest_filename),
+    return ServerBuild(os.path.join(server_dir, latest_filename),
                        download_url, latest_buildnum, latest_download_size)
 
 
@@ -138,7 +138,7 @@ def main():
     if args.server_dir is not None:
         args.server_dir = os.path.expanduser(args.server_dir)
 
-    server_build = get_latest_server_build(args.minecraft_version)
+    server_build = get_latest_server_build(args.server_dir, args.minecraft_version)
     if server_build is None:
         return
 
