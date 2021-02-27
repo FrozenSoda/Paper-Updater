@@ -120,7 +120,7 @@ def print_title(s):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Update your Paper server effortlessly.')
+    parser = argparse.ArgumentParser(description='Update your Minecraft Paper server effortlessly.')
 
     parser.add_argument('--server-dir',
                         help='The full path to the directory where the server files reside.',
