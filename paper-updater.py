@@ -6,16 +6,60 @@ import os
 import json
 import requests
 
-base_download_url = "https://papermc.io/api/v1/paper/{}/latest/download"
-base_version_url = "https://papermc.io/api/v1/paper/{}/latest"
-
 
 class ServerBuild:
-    def __init__(self, filepath, download_url, buildnum, size):
-        self.filepath = filepath
+    version_url_template = "https://papermc.io/api/v2/projects/paper/versions/{}"
+    download_url_template = "https://papermc.io/api/v2/projects/paper/versions/{0}/builds/{1}/downloads/paper-{0}-{1}.jar"
+
+    def __init__(self, build_num, mc_version, download_url, download_size):
+        self.build_num = build_num
+        self.mc_version = mc_version
         self.download_url = download_url
-        self.buildnum = buildnum
-        self.size = size
+        self.download_size = download_size
+
+    @staticmethod
+    def get_latest(mc_version):
+        print('Checking for updates ...')
+
+        build_data = json.loads(requests.get(version_url_template.format(mc_version)).text)
+        build_num = build_data['builds'][-1]
+
+        download_url = download_url_template.format(mc_version, build_num)
+        download_headers = requests.head(download_url)
+        download_size = int(download_headers.headers['Content-Length'])
+
+        return ServerBuild(download_url, mc_version, build_num, download_size)
+
+    def prompt_update(self, server_dir):
+        latest_filename = 'paper-{}-{}.jar'.format(self.mc_version, self.build_num)
+        filename_pattern = r"^paper-{}-(.*).jar$".format(self.mc_version)
+
+        # Find newest existing build jar in script dir
+        current_build_num = -1
+        for filename in os.listdir(server_dir):
+            if not re.match(filename_pattern, filename):
+                # file is not a Paper jar file
+                continue
+
+            try:
+                build_num = int(re.search(filename_pattern, filename).group(1))
+            except ValueError:
+                continue
+
+            if build_num > current_build_num:
+                current_build_num = build_num
+
+        if self.build_num <= current_build_num:
+            print('No updates are available (current build: {})'.format(current_build_num))
+
+        print('An update is available!')
+
+        print('New Build:         {}'.format(self.build_num))
+        if current_build_num > -1:
+            print('Installed Build:   {}'.format(current_build_num))
+        else:
+            print('Installed Build:   No installed build was found')
+        print('Download Size:     {}'.format(sizeof_fmt(self.download_size)))
 
 
 def cls():
@@ -29,55 +73,6 @@ def sizeof_fmt(num, suffix='B'):
             return "%3.1f %s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f %s%s" % (num, 'Yi', suffix)
-
-
-def get_latest_server_build(server_dir, paper_version):
-    global base_download_url
-
-    print('Checking for updates ...')
-
-    download_url = base_download_url.format(paper_version)
-
-    headers = requests.head(download_url)
-
-    buildnum_pattern = r"^paper-{}-(.*).jar$".format(paper_version)
-
-    build_data = json.loads(requests.get(base_version_url.format(paper_version)).text)
-    latest_filename = 'paper-{}-{}.jar'.format(build_data['version'], build_data['build'])
-
-    latest_download_size = int(headers.headers['Content-Length'])
-    latest_buildnum = int(re.search(buildnum_pattern, latest_filename).group(1))
-
-    # Find newest existing build jar in script dir
-    current_buildnum = -1
-    for filename in os.listdir(server_dir):
-        if not re.match(buildnum_pattern, filename):
-            # file is not a Paper jar file
-            continue
-
-        try:
-            buildnum = int(re.search(buildnum_pattern, filename).group(1))
-        except ValueError:
-            continue
-
-        if buildnum > current_buildnum:
-            current_buildnum = buildnum
-
-    if latest_buildnum <= current_buildnum:
-        print('No updates are available (current build: {})'.format(current_buildnum))
-        return None
-
-    print('An update is available!')
-
-    print('New Build:         {}'.format(latest_buildnum))
-    if current_buildnum > -1:
-        print('Installed Build:   {}'.format(current_buildnum))
-    else:
-        print('Installed Build:   No installed build was found')
-    print('Download Size:     {}'.format(sizeof_fmt(latest_download_size)))
-
-    return ServerBuild(os.path.join(server_dir, latest_filename),
-                       download_url, latest_buildnum, latest_download_size)
 
 
 def download_update(server_build):
@@ -138,9 +133,7 @@ def main():
     if args.server_dir is not None:
         args.server_dir = os.path.expanduser(args.server_dir)
 
-    server_build = get_latest_server_build(args.server_dir, args.minecraft_version)
-    if server_build is None:
-        return
+    latest_build = ServerBuild.get_latest(args.minecraft_version)
 
     download_update(server_build)
     update_server_script(server_build, args.server_dir, args.start_script_name)
