@@ -8,32 +8,13 @@ import json
 import requests
 
 
-class ServerBuild:
-    version_url_template = "https://papermc.io/api/v2/projects/paper/versions/{}"
-    download_url_template =\
-        "https://papermc.io/api/v2/projects/paper/versions/{0}/builds/{1}/downloads/paper-{0}-{1}.jar"
-
-    def __init__(self, mc_version: str, build_num: int, download_size: int, download_url: str):
+class LocalServerBuild:
+    def __init__(self, mc_version: str, build_num: int):
         self.mc_version = mc_version
         self.build_num = build_num
-        self.download_size = download_size
-        self.download_url = download_url
 
     @staticmethod
-    def get_latest(mc_version: str) -> ServerBuild:
-        print('Checking for updates ...')
-
-        build_data = json.loads(requests.get(ServerBuild.version_url_template.format(mc_version)).text)
-        build_num = build_data['builds'][-1]
-
-        download_url = ServerBuild.download_url_template.format(mc_version, build_num)
-        download_headers = requests.head(download_url)
-        download_size = int(download_headers.headers['Content-Length'])
-
-        return ServerBuild(mc_version, build_num, download_size, download_url)
-
-    @staticmethod
-    def get_installed(mc_version: str, server_dir: str) -> ServerBuild:
+    def get_latest(mc_version: str, server_dir: str) -> LocalServerBuild:
         filename_pattern = r"^paper-{}-(.*).jar$".format(mc_version)
 
         # Find the newest existing build jar in script dir
@@ -51,12 +32,37 @@ class ServerBuild:
             if build_num > latest_installed_build_num:
                 latest_installed_build_num = build_num
 
-        return ServerBuild(mc_version, latest_installed_build_num, None, None)
+        return LocalServerBuild(mc_version, latest_installed_build_num)
+
+
+class OnlineServerBuild:
+    version_url_template = "https://papermc.io/api/v2/projects/paper/versions/{}"
+    download_url_template = \
+        "https://papermc.io/api/v2/projects/paper/versions/{0}/builds/{1}/downloads/paper-{0}-{1}.jar"
+
+    def __init__(self, mc_version: str, build_num: int, download_size: int, download_url: str):
+        self.mc_version = mc_version
+        self.build_num = build_num
+        self.download_size = download_size
+        self.download_url = download_url
+
+    @staticmethod
+    def get_latest(mc_version: str) -> OnlineServerBuild:
+        print('Checking for updates ...')
+
+        build_data = json.loads(requests.get(OnlineServerBuild.version_url_template.format(mc_version)).text)
+        build_num = build_data['builds'][-1]
+
+        download_url = OnlineServerBuild.download_url_template.format(mc_version, build_num)
+        download_headers = requests.head(download_url)
+        download_size = int(download_headers.headers['Content-Length'])
+
+        return OnlineServerBuild(mc_version, build_num, download_size, download_url)
 
     def update_to(self, *, server_dir: str, start_script_name: str) -> None:
         # UPDATE SERVER JAR
 
-        installed_build = ServerBuild.get_installed(self.mc_version, server_dir)
+        installed_build = LocalServerBuild.get_latest(self.mc_version, server_dir)
 
         if self.build_num <= installed_build.build_num:
             print('No updates are available (current build: {})'.format(installed_build.build_num))
@@ -137,7 +143,7 @@ def main() -> None:
     if args.server_dir is not None:
         args.server_dir = os.path.expanduser(args.server_dir)
 
-    latest_build = ServerBuild.get_latest(args.minecraft_version)
+    latest_build = OnlineServerBuild.get_latest(args.minecraft_version)
     latest_build.update_to(server_dir=args.server_dir, start_script_name=args.start_script_name)
 
 
