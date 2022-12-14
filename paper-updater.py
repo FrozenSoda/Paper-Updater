@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from __future__ import annotations
 
 import argparse
 import re
@@ -12,14 +13,14 @@ class ServerBuild:
     download_url_template =\
         "https://papermc.io/api/v2/projects/paper/versions/{0}/builds/{1}/downloads/paper-{0}-{1}.jar"
 
-    def __init__(self, mc_version, build_num, download_size, download_url):
+    def __init__(self, mc_version: str, build_num: int, download_size: int, download_url: str):
         self.mc_version = mc_version
         self.build_num = build_num
         self.download_size = download_size
         self.download_url = download_url
 
     @staticmethod
-    def get_latest(mc_version):
+    def get_latest(mc_version: str) -> ServerBuild:
         print('Checking for updates ...')
 
         build_data = json.loads(requests.get(ServerBuild.version_url_template.format(mc_version)).text)
@@ -32,7 +33,7 @@ class ServerBuild:
         return ServerBuild(mc_version, build_num, download_size, download_url)
 
     @staticmethod
-    def get_installed(mc_version, server_dir):
+    def get_installed(mc_version: str, server_dir: str) -> ServerBuild:
         filename_pattern = r"^paper-{}-(.*).jar$".format(mc_version)
 
         # Find the newest existing build jar in script dir
@@ -52,7 +53,7 @@ class ServerBuild:
 
         return ServerBuild(mc_version, latest_installed_build_num, None, None)
 
-    def update_to(self, *, server_dir, start_script_name):
+    def update_to(self, *, server_dir: str, start_script_name: str) -> None:
         # UPDATE SERVER JAR
 
         installed_build = ServerBuild.get_installed(self.mc_version, server_dir)
@@ -95,12 +96,12 @@ class ServerBuild:
         print("Update finished!")
 
 
-def cls():
+def cls() -> None:
     """Clears the terminal."""
     os.system('cls' if os.name == 'nt' else 'clear')
 
 
-def sizeof_fmt(num, suffix='B'):
+def sizeof_fmt(num: int, suffix: str = 'B') -> str:
     for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(num) < 1024.0:
             return "%3.1f %s%s" % (num, unit, suffix)
@@ -108,7 +109,7 @@ def sizeof_fmt(num, suffix='B'):
     return "%.1f %s%s" % (num, 'Yi', suffix)
 
 
-def print_title(s):
+def print_title(s: str) -> None:
     """Prints a nice looking title for menus, where 's' is a string consisting of the title text"""
 
     cls()
@@ -117,7 +118,7 @@ def print_title(s):
     print("")
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description='Update your Minecraft Paper server effortlessly.')
 
     parser.add_argument('--server-dir',
