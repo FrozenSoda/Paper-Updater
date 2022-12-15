@@ -50,8 +50,22 @@ class OnlineServerBuild:
     def get_latest(mc_version: str) -> OnlineServerBuild:
         print('Checking for updates ...')
 
-        version_builds_response = json.loads(requests.get(OnlineServerBuild.builds_url_template.format(mc_version)).text)
-        non_experimental_builds = [build for build in version_builds_response['builds'] if build['channel'] == 'default']
+        response = requests.get(OnlineServerBuild.builds_url_template.format(mc_version))
+        response_json = json.loads(response.text)
+
+        if response.status_code != 200:
+            if 'error' in response_json:
+                raise RuntimeError('Response status {} when retrieving available server builds. Reason: {}'
+                                   .format(response.status_code, response_json['error']))
+            else:
+                raise RuntimeError('Response status {} when retrieving available server builds.'
+                                   .format(response.status_code))
+
+        non_experimental_builds = [build for build in response_json['builds'] if build['channel'] == 'default']
+
+        if len(non_experimental_builds) == 0:
+            raise ValueError('No non-experimental builds are available for the specified Minecraft version.')
+
         latest_non_experimental_build = non_experimental_builds[-1]
         latest_build_num = latest_non_experimental_build['build']
 
