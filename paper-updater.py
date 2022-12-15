@@ -147,4 +147,5 @@ def main() -> None:
     latest_build.update_to(server_dir=args.server_dir, start_script_name=args.start_script_name)
 
 
-main()
+if __name__ == '__main__':
+    main()
