@@ -51,16 +51,8 @@ class OnlineServerBuild:
         print('Checking for updates ...')
 
         response = requests.get(OnlineServerBuild.builds_url_template.format(mc_version))
+        response.raise_for_status()
         response_json = json.loads(response.text)
-
-        if response.status_code != 200:
-            if 'error' in response_json:
-                raise requests.HTTPError('Response status {} when retrieving available server builds. Reason: {}'
-                                         .format(response.status_code, response_json['error']))
-            else:
-                raise requests.HTTPError('Response status {} when retrieving available server builds.'
-                                         .format(response.status_code))
-
         non_experimental_builds = [build for build in response_json['builds'] if build['channel'] == 'default']
 
         if len(non_experimental_builds) == 0:
