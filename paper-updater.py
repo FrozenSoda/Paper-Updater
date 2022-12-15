@@ -36,7 +36,7 @@ class LocalServerBuild:
 
 
 class OnlineServerBuild:
-    version_url_template = "https://papermc.io/api/v2/projects/paper/versions/{}"
+    builds_url_template = "https://papermc.io/api/v2/projects/paper/versions/{}/builds"
     download_url_template = \
         "https://papermc.io/api/v2/projects/paper/versions/{0}/builds/{1}/downloads/paper-{0}-{1}.jar"
 
@@ -50,14 +50,16 @@ class OnlineServerBuild:
     def get_latest(mc_version: str) -> OnlineServerBuild:
         print('Checking for updates ...')
 
-        build_data = json.loads(requests.get(OnlineServerBuild.version_url_template.format(mc_version)).text)
-        build_num = build_data['builds'][-1]
+        version_builds_response = json.loads(requests.get(OnlineServerBuild.builds_url_template.format(mc_version)).text)
+        non_experimental_builds = [build for build in version_builds_response['builds'] if build['channel'] == 'default']
+        latest_non_experimental_build = non_experimental_builds[-1]
+        latest_build_num = latest_non_experimental_build['build']
 
-        download_url = OnlineServerBuild.download_url_template.format(mc_version, build_num)
+        download_url = OnlineServerBuild.download_url_template.format(mc_version, latest_build_num)
         download_headers = requests.head(download_url)
         download_size = int(download_headers.headers['Content-Length'])
 
-        return OnlineServerBuild(mc_version, build_num, download_size, download_url)
+        return OnlineServerBuild(mc_version, latest_build_num, download_size, download_url)
 
     def update_to(self, *, server_dir: str, start_script_name: str) -> None:
         # UPDATE SERVER JAR
