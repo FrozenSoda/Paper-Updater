@@ -55,11 +55,11 @@ class OnlineServerBuild:
 
         if response.status_code != 200:
             if 'error' in response_json:
-                raise RuntimeError('Response status {} when retrieving available server builds. Reason: {}'
-                                   .format(response.status_code, response_json['error']))
+                raise requests.HTTPError('Response status {} when retrieving available server builds. Reason: {}'
+                                         .format(response.status_code, response_json['error']))
             else:
-                raise RuntimeError('Response status {} when retrieving available server builds.'
-                                   .format(response.status_code))
+                raise requests.HTTPError('Response status {} when retrieving available server builds.'
+                                         .format(response.status_code))
 
         non_experimental_builds = [build for build in response_json['builds'] if build['channel'] == 'default']
 
